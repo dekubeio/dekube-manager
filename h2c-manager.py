@@ -384,6 +384,7 @@ def _run(extra_args):
 # ---------------------------------------------------------------------------
 
 def main():
+    """CLI entry point. Dispatches to run mode or install mode."""
     # Intercept "run" before argparse — it has its own argument style
     args_before_run = []
     run_idx = None
