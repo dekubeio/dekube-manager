@@ -260,6 +260,15 @@ def _write_file(path, content):
 # Run mode
 # ---------------------------------------------------------------------------
 
+def _find_dependents(name, requested, registry):
+    """Return a display string like ' (dependency of x, y)' or empty."""
+    dependents = [req_name for req_name, _ in requested
+                  if name in registry.get(req_name, {}).get("depends", [])]
+    if dependents:
+        return f" (dependency of {', '.join(dependents)})"
+    return ""
+
+
 def _install(core_version=None, extensions=None, install_dir=".h2c"):
     """Install h2c-core and optional extensions.
 
@@ -301,13 +310,7 @@ def _install(core_version=None, extensions=None, install_dir=".h2c"):
 
             dep_of = ""
             if is_dep:
-                dependents = []
-                for req_name, _ in requested:
-                    req_entry = registry.get(req_name, {})
-                    if name in req_entry.get("depends", []):
-                        dependents.append(req_name)
-                if dependents:
-                    dep_of = f" (dependency of {', '.join(dependents)})"
+                dep_of = _find_dependents(name, requested, registry)
 
             print(f"Fetching extension {name} {version_display}{dep_of}...")
 
