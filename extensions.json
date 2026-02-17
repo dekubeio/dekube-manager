@@ -7,17 +7,17 @@
       "file": "keycloak.py",
       "depends": []
     },
-    "certmanager": {
-      "repo": "helmfile2compose/h2c-operator-certmanager",
+    "cert-manager": {
+      "repo": "helmfile2compose/h2c-operator-cert-manager",
       "description": "Certificate, ClusterIssuer, Issuer CRDs",
-      "file": "certmanager.py",
+      "file": "cert_manager.py",
       "depends": []
     },
     "trust-manager": {
       "repo": "helmfile2compose/h2c-operator-trust-manager",
       "description": "Bundle CRD (trust-manager)",
       "file": "trust_manager.py",
-      "depends": ["certmanager"]
+      "depends": ["cert-manager"]
     },
     "servicemonitor": {
       "repo": "helmfile2compose/h2c-operator-servicemonitor",

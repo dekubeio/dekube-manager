@@ -18,13 +18,13 @@ curl -fsSL https://raw.githubusercontent.com/helmfile2compose/h2c-manager/main/h
 python3 h2c-manager.py
 
 # Core + operators (from CLI)
-python3 h2c-manager.py keycloak certmanager trust-manager
+python3 h2c-manager.py keycloak cert-manager trust-manager
 
 # Core + operators (from helmfile2compose.yaml depends list)
 python3 h2c-manager.py
 
 # Pin versions
-python3 h2c-manager.py --core-version v2.0.0 keycloak==0.1.0
+python3 h2c-manager.py --core-version v2.1.0 keycloak==0.2.0
 
 # Custom install directory
 python3 h2c-manager.py -d ./tools keycloak
@@ -53,17 +53,17 @@ Defaults: `--helmfile-dir .`, `--extensions-dir .h2c/extensions` (if it exists),
 If `helmfile2compose.yaml` exists, h2c-manager reads `core_version` and `depends` from it:
 
 ```yaml
-core_version: v2.0.0
+core_version: v2.1.0
 depends:
   - keycloak
-  - certmanager==0.1.0
+  - cert-manager==0.1.0
   - trust-manager
 ```
 
 ```bash
 python3 h2c-manager.py
-# Core version from helmfile2compose.yaml: v2.0.0
-# Reading extensions from helmfile2compose.yaml: keycloak, certmanager==0.1.0, trust-manager
+# Core version from helmfile2compose.yaml: v2.1.0
+# Reading extensions from helmfile2compose.yaml: keycloak, cert-manager==0.1.0, trust-manager
 ```
 
 CLI flags (`--core-version`, explicit extension args) override the yaml.
@@ -75,7 +75,7 @@ CLI flags (`--core-version`, explicit extension args) override the yaml.
 ├── helmfile2compose.py
 └── extensions/
     ├── keycloak.py
-    └── certmanager.py        # auto-resolved as dep of trust-manager
+    └── cert_manager.py        # auto-resolved as dep of trust-manager
 ```
 
 ## Extension registry
