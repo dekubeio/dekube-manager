@@ -2,25 +2,25 @@
   "schema_version": 1,
   "extensions": {
     "keycloak": {
-      "repo": "helmfile2compose/h2c-operator-keycloak",
+      "repo": "helmfile2compose/h2c-provider-keycloak",
       "description": "Keycloak and KeycloakRealmImport CRDs",
       "file": "keycloak.py",
       "depends": []
     },
     "cert-manager": {
-      "repo": "helmfile2compose/h2c-operator-cert-manager",
+      "repo": "helmfile2compose/h2c-converter-cert-manager",
       "description": "Certificate, ClusterIssuer, Issuer CRDs",
       "file": "cert_manager.py",
       "depends": []
     },
     "trust-manager": {
-      "repo": "helmfile2compose/h2c-operator-trust-manager",
+      "repo": "helmfile2compose/h2c-converter-trust-manager",
       "description": "Bundle CRD (trust-manager)",
       "file": "trust_manager.py",
       "depends": ["cert-manager"]
     },
     "servicemonitor": {
-      "repo": "helmfile2compose/h2c-operator-servicemonitor",
+      "repo": "helmfile2compose/h2c-provider-servicemonitor",
       "description": "Prometheus and ServiceMonitor CRDs (kube-prometheus-stack)",
       "file": "servicemonitor.py",
       "depends": []
