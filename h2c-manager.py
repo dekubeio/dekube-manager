@@ -11,6 +11,8 @@ Usage:
     python3 h2c-manager.py --core-version v2.0.0   # pin core version
     python3 h2c-manager.py -d ./tools keycloak     # custom install dir
     python3 h2c-manager.py --no-reinstall          # skip download, use cached .h2c/
+    python3 h2c-manager.py --info                  # show info for all extensions (or yaml depends)
+    python3 h2c-manager.py --info nginx traefik    # show info for specific extensions
     python3 h2c-manager.py run -e compose          # run h2c with smart defaults
 
 By default, h2c-core and extensions are always re-downloaded (overwriting
@@ -210,6 +212,16 @@ def _resolve_dependencies(requested, registry):
             result.append((name, pinned, False))
 
     return result
+
+
+def _latest_tag_safe(repo):
+    """Resolve the latest release tag, return None on failure."""
+    url = f"{GITHUB_API}/repos/{repo}/releases/latest"
+    try:
+        data = _github_json(url)
+        return data["tag_name"]
+    except (urllib.error.HTTPError, urllib.error.URLError, KeyError):
+        return None
 
 
 def _check_incompatible(resolved, registry, ignored=None):
@@ -442,6 +454,53 @@ def _run(extra_args, no_reinstall=False, core_version=None, ignored=None):
 
 
 # ---------------------------------------------------------------------------
+# Info mode
+# ---------------------------------------------------------------------------
+
+def _info(names):
+    """Display info about extensions from the registry.
+
+    If *names* is empty, show all extensions. Otherwise show only the
+    named ones (with dependency resolution — deps are included).
+    """
+    registry = _fetch_registry()
+
+    if names:
+        requested = [_parse_extension_arg(n) for n in names]
+        resolved = _resolve_dependencies(requested, registry)
+        show = [name for name, _, _ in resolved]
+    else:
+        show = sorted(registry)
+
+    for name in show:
+        entry = registry.get(name)
+        if entry is None:
+            print(f"{name}: unknown extension")
+            print()
+            continue
+
+        print(f"{name}")
+        print(f"  {entry.get('description', '(no description)')}")
+        print(f"  repo: {entry['repo']}")
+
+        tag = _latest_tag_safe(entry["repo"])
+        if tag:
+            print(f"  latest: {tag}")
+        else:
+            print(f"  latest: (could not fetch)")
+
+        deps = entry.get("depends", [])
+        if deps:
+            print(f"  depends: {', '.join(deps)}")
+
+        incompat = entry.get("incompatible", [])
+        if incompat:
+            print(f"  incompatible: {', '.join(incompat)}")
+
+        print()
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -493,7 +552,18 @@ def main():
     parser.add_argument(
         "--ignore-compatibility-errors", nargs="+", metavar="EXT",
         default=[], help="Bypass incompatibility checks for these extensions")
+    parser.add_argument(
+        "--info", action="store_true",
+        help="Show extension info instead of installing")
     args = parser.parse_args()
+
+    if args.info:
+        names = args.extensions
+        if not names:
+            yaml_depends, _ = _read_yaml_config()
+            names = yaml_depends
+        _info(names)
+        return
 
     _install(
         core_version=args.core_version,

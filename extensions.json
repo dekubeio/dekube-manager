@@ -31,6 +31,18 @@
       "file": "flatten_internal_urls.py",
       "depends": [],
       "incompatible": ["cert-manager"]
+    },
+    "nginx": {
+      "repo": "helmfile2compose/h2c-rewriter-nginx",
+      "description": "Nginx ingress annotation rewriter",
+      "file": "nginx_rewriter.py",
+      "depends": []
+    },
+    "traefik": {
+      "repo": "helmfile2compose/h2c-rewriter-traefik",
+      "description": "Traefik ingress annotation rewriter (POC)",
+      "file": "traefik_rewriter.py",
+      "depends": []
     }
   }
 }
