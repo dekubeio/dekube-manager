@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 """h2c-manager — lightweight package manager for helmfile2compose.
 
-Downloads helmfile2compose.py and optional extensions
+Downloads a helmfile2compose distribution and optional extensions
 from GitHub, resolving versions and dependencies automatically.
 
 Usage:
-    python3 h2c-manager.py                        # install core (+ depends from yaml)
-    python3 h2c-manager.py keycloak                # install core + keycloak operator
-    python3 h2c-manager.py keycloak==0.1.0         # pin extension version
-    python3 h2c-manager.py --core-version v2.0.0   # pin core version
-    python3 h2c-manager.py -d ./tools keycloak     # custom install dir
-    python3 h2c-manager.py --no-reinstall          # skip download, use cached .h2c/
-    python3 h2c-manager.py --info                  # show info for all extensions (or yaml depends)
-    python3 h2c-manager.py --info nginx traefik    # show info for specific extensions
-    python3 h2c-manager.py run -e compose          # run h2c with smart defaults
+    python3 h2c-manager.py                              # install distribution (+ depends from yaml)
+    python3 h2c-manager.py keycloak                      # install distribution + keycloak operator
+    python3 h2c-manager.py keycloak==0.1.0               # pin extension version
+    python3 h2c-manager.py --distribution-version v2.0.0 # pin distribution version
+    python3 h2c-manager.py --distribution core            # use bare engine instead of full distribution
+    python3 h2c-manager.py --no-distribution keycloak     # extensions only (no distribution)
+    python3 h2c-manager.py -d ./tools keycloak            # custom install dir
+    python3 h2c-manager.py --no-reinstall                 # skip download, use cached .h2c/
+    python3 h2c-manager.py --info                         # show info for all extensions (or yaml depends)
+    python3 h2c-manager.py --info nginx traefik           # show info for specific extensions
+    python3 h2c-manager.py run -e compose                 # run h2c with smart defaults
 
-By default, h2c-core and extensions are always re-downloaded (overwriting
-any cached files). Use --no-reinstall to skip the download and reuse
-the existing .h2c/ directory.
+By default, the distribution and extensions are always re-downloaded
+(overwriting any cached files). Use --no-reinstall to skip the download
+and reuse the existing .h2c/ directory.
 
 If no extensions are given on the command line and a helmfile2compose.yaml
 file exists in the current directory with a 'depends' list, those extensions
@@ -33,11 +35,14 @@ import sys
 import urllib.error
 import urllib.request
 
-CORE_REPO = "helmfile2compose/helmfile2compose"
-CORE_FILE = "helmfile2compose.py"
+DEFAULT_DISTRIBUTION = "helmfile2compose"
 REGISTRY_URL = (
     "https://raw.githubusercontent.com/"
     "helmfile2compose/h2c-manager/main/extensions.json"
+)
+DISTRIBUTIONS_URL = (
+    "https://raw.githubusercontent.com/"
+    "helmfile2compose/h2c-manager/main/distributions.json"
 )
 GITHUB_API = "https://api.github.com"
 RAW_BASE = "https://raw.githubusercontent.com"
@@ -113,23 +118,40 @@ def _download_or_die(url):
 # ---------------------------------------------------------------------------
 
 def _read_yaml_config(yaml_path="helmfile2compose.yaml"):
-    """Read 'depends' list and 'core_version' from helmfile2compose.yaml.
+    """Read 'depends', 'distribution', and 'distribution_version' from yaml.
 
-    Line parser — no pyyaml needed. Returns (depends_list, core_version_or_none).
+    Line parser — no pyyaml needed.
+    Returns (depends_list, distribution_or_none, distribution_version_or_none).
+    Backwards compat: 'core_version' is read as fallback for 'distribution_version'.
     """
     if not os.path.isfile(yaml_path):
-        return [], None
+        return [], None, None
     in_depends = False
     depends = []
+    distribution = None
+    distribution_version = None
     core_version = None
     with open(yaml_path, encoding="utf-8") as f:
         for line in f:
             stripped = line.strip()
-            # core_version: v2.0.0
+            if stripped.startswith("distribution_version:"):
+                val = stripped.split(":", 1)[1].strip().strip("'\"")
+                if val:
+                    distribution_version = val
+                continue
+            # Backwards compat: core_version → distribution_version
             if stripped.startswith("core_version:"):
                 val = stripped.split(":", 1)[1].strip().strip("'\"")
                 if val:
                     core_version = val
+                continue
+            if stripped.startswith("distribution:"):
+                # Avoid matching distribution_version (already handled above)
+                key = stripped.split(":")[0]
+                if key == "distribution":
+                    val = stripped.split(":", 1)[1].strip().strip("'\"")
+                    if val:
+                        distribution = val
                 continue
             # Start of depends block
             if stripped == "depends:" or stripped.startswith("depends:"):
@@ -146,7 +168,10 @@ def _read_yaml_config(yaml_path="helmfile2compose.yaml"):
                     continue
                 else:
                     in_depends = False  # next YAML key — end of depends block
-    return depends, core_version
+    # distribution_version takes precedence over core_version
+    if not distribution_version and core_version:
+        distribution_version = core_version
+    return depends, distribution, distribution_version
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +190,35 @@ def _fetch_registry():
         raise
     registry = json.loads(data)
     return registry.get("extensions", {})
+
+
+# ---------------------------------------------------------------------------
+# Distribution registry
+# ---------------------------------------------------------------------------
+
+def _fetch_distributions():
+    """Fetch and parse the distributions.json registry."""
+    try:
+        data = _github_get(DISTRIBUTIONS_URL)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            print("Error: distributions registry not found", file=sys.stderr)
+            print(f"  URL: {DISTRIBUTIONS_URL}", file=sys.stderr)
+            sys.exit(1)
+        raise
+    registry = json.loads(data)
+    return registry.get("distributions", {})
+
+
+def _resolve_distribution(name, distributions):
+    """Resolve a distribution name to (repo, file). Exits on unknown name."""
+    entry = distributions.get(name)
+    if entry is None:
+        print(f"Error: unknown distribution '{name}'", file=sys.stderr)
+        print(f"  Available: {', '.join(sorted(distributions))}",
+              file=sys.stderr)
+        sys.exit(1)
+    return entry["repo"], entry["file"]
 
 
 # ---------------------------------------------------------------------------
@@ -316,28 +370,38 @@ def _find_dependents(name, requested, registry):
     return ""
 
 
-def _install_core(install_dir, core_version, yaml_core_version, no_reinstall):
-    """Download h2c-core into install_dir. Skips if cached and no_reinstall."""
-    core_path = os.path.join(install_dir, CORE_FILE)
-    if no_reinstall and os.path.isfile(core_path):
-        print(f"Cached {core_path}")
-        return
-    if core_version:
-        core_tag = _normalize_tag(core_version)
-    elif yaml_core_version:
-        core_tag = _normalize_tag(yaml_core_version)
-        print(f"Core version from helmfile2compose.yaml: {core_tag}")
+def _install_distribution(install_dir, dist_name, dist_version,
+                          yaml_dist_version, no_reinstall):
+    """Download a distribution into install_dir. Returns the filename.
+
+    Skips download if cached and no_reinstall.
+    """
+    distributions = _fetch_distributions()
+    repo, filename = _resolve_distribution(dist_name, distributions)
+
+    dist_path = os.path.join(install_dir, filename)
+    if no_reinstall and os.path.isfile(dist_path):
+        print(f"Cached {dist_path}")
+        return filename
+
+    if dist_version:
+        tag = _normalize_tag(dist_version)
+    elif yaml_dist_version:
+        tag = _normalize_tag(yaml_dist_version)
+        print(f"Distribution version from helmfile2compose.yaml: {tag}")
     else:
-        core_tag = _latest_tag(CORE_REPO)
-    core_url = _release_asset_url(CORE_REPO, core_tag, CORE_FILE)
-    _fetch_file(core_url, core_path, f"h2c-core {core_tag}")
+        tag = _latest_tag(repo)
+
+    url = _release_asset_url(repo, tag, filename)
+    _fetch_file(url, dist_path, f"{dist_name} {tag}")
+    return filename
 
 
 def _validate_extensions(requested, ignored=None):
     """Fetch registry, resolve dependencies, return (registry, resolved).
 
     Exits with an error if any extension is unknown or incompatible.
-    Call this before downloading the core so we fail fast on bad input.
+    Call this before downloading the distribution so we fail fast on bad input.
     """
     if not requested:
         return None, []
@@ -387,17 +451,22 @@ def _install_extensions(extensions_dir, registry, resolved, requested,
     return extensions_with_reqs
 
 
-def _install(core_version=None, extensions=None, install_dir=".h2c",
-             no_reinstall=False, ignored=None):
-    """Install h2c-core and optional extensions.
+def _install(distribution_version=None, distribution=None, extensions=None,
+             install_dir=".h2c", no_reinstall=False, no_distribution=False,
+             ignored=None):
+    """Install a distribution and optional extensions.
 
-    If core_version/extensions are not given, reads from helmfile2compose.yaml.
+    If distribution_version/extensions are not given, reads from
+    helmfile2compose.yaml.
+
+    Returns the distribution filename (e.g. 'helmfile2compose.py') or None
+    when --no-distribution is used.
 
     When no_reinstall is True, existing files are kept as-is and only missing
     files are downloaded. There is no version tracking: a cached file is never
     updated unless you run without --no-reinstall (the default).
     """
-    yaml_depends, yaml_core_version = _read_yaml_config()
+    yaml_depends, yaml_distribution, yaml_dist_version = _read_yaml_config()
 
     ext_args = extensions if extensions is not None else []
     if not ext_args and yaml_depends:
@@ -408,7 +477,12 @@ def _install(core_version=None, extensions=None, install_dir=".h2c",
     requested = [_parse_extension_arg(ext) for ext in ext_args]
     registry, resolved = _validate_extensions(requested, ignored=ignored)
 
-    _install_core(install_dir, core_version, yaml_core_version, no_reinstall)
+    dist_file = None
+    if not no_distribution:
+        dist_name = distribution or yaml_distribution or DEFAULT_DISTRIBUTION
+        dist_file = _install_distribution(
+            install_dir, dist_name, distribution_version, yaml_dist_version,
+            no_reinstall)
 
     extensions_dir = os.path.join(install_dir, "extensions")
     extensions_with_reqs = _install_extensions(
@@ -427,23 +501,32 @@ def _install(core_version=None, extensions=None, install_dir=".h2c",
               file=sys.stderr)
         print(file=sys.stderr)
 
+    return dist_file
 
-def _run(extra_args, no_reinstall=False, core_version=None, ignored=None):
-    """Run helmfile2compose.py with smart defaults.
 
-    Downloads h2c-core (+ extensions from helmfile2compose.yaml) before
-    every run, overwriting cached files. Use --no-reinstall to skip
+def _run(extra_args, no_reinstall=False, distribution_version=None,
+         distribution=None, ignored=None):
+    """Run the distribution script with smart defaults.
+
+    Downloads the distribution (+ extensions from helmfile2compose.yaml)
+    before every run, overwriting cached files. Use --no-reinstall to skip
     already-cached files (missing files are still downloaded).
     Defaults: --helmfile-dir . --extensions-dir .h2c/extensions --output-dir .
     Any explicit flag in extra_args overrides the default.
     """
     has_yaml = os.path.isfile("helmfile2compose.yaml")
     if not has_yaml:
-        print("No helmfile2compose.yaml found — installing h2c-core only")
-    _install(core_version=core_version, no_reinstall=no_reinstall, ignored=ignored)
+        print("No helmfile2compose.yaml found — installing distribution only")
+    dist_file = _install(distribution_version=distribution_version,
+                         distribution=distribution, no_reinstall=no_reinstall,
+                         ignored=ignored)
     print()
 
-    h2c = os.path.join(".h2c", CORE_FILE)
+    if dist_file is None:
+        print("Error: run mode requires a distribution", file=sys.stderr)
+        sys.exit(1)
+
+    h2c = os.path.join(".h2c", dist_file)
     cmd = [sys.executable, h2c]
 
     extensions_dir = os.path.join(".h2c", "extensions")
@@ -521,25 +604,31 @@ def main():
         args_before_run.append(arg)
     if run_idx is not None:
         no_reinstall = "--no-reinstall" in args_before_run
-        core_version = None
+        distribution_version = None
+        distribution = None
         ignored = set()
         for i, arg in enumerate(args_before_run):
-            if arg == "--core-version" and i + 1 < len(args_before_run):
-                core_version = args_before_run[i + 1]
+            if arg == "--distribution-version" and i + 1 < len(args_before_run):
+                distribution_version = args_before_run[i + 1]
+            if arg == "--distribution" and i + 1 < len(args_before_run):
+                distribution = args_before_run[i + 1]
             if arg == "--ignore-compatibility-errors":
                 j = i + 1
                 while j < len(args_before_run) and not args_before_run[j].startswith("-"):
                     ignored.add(args_before_run[j])
                     j += 1
         _run(sys.argv[run_idx + 1:], no_reinstall=no_reinstall,
-             core_version=core_version, ignored=ignored or None)
+             distribution_version=distribution_version,
+             distribution=distribution, ignored=ignored or None)
         return
 
     parser = argparse.ArgumentParser(
-        description="Download h2c-core and extensions.",
+        description="Download a helmfile2compose distribution and extensions.",
         epilog="Examples:\n"
                "  h2c-manager.py keycloak\n"
-               "  h2c-manager.py --core-version v2.0.0 keycloak\n"
+               "  h2c-manager.py --distribution-version v2.0.0 keycloak\n"
+               "  h2c-manager.py --distribution core\n"
+               "  h2c-manager.py --no-distribution keycloak\n"
                "  h2c-manager.py keycloak==0.1.0\n"
                "  h2c-manager.py -d ./tools keycloak\n"
                "  h2c-manager.py run -e compose\n",
@@ -549,8 +638,14 @@ def main():
         "extensions", nargs="*", metavar="EXTENSION",
         help="Extension to install (e.g. 'keycloak', 'keycloak==0.1.0')")
     parser.add_argument(
-        "--core-version", default=None,
-        help="Pin h2c-core to a specific version tag (e.g. v2.0.0)")
+        "--distribution-version", default=None,
+        help="Pin distribution to a specific version tag (e.g. v2.0.0)")
+    parser.add_argument(
+        "--distribution", default=None,
+        help="Distribution to install (default: helmfile2compose)")
+    parser.add_argument(
+        "--no-distribution", action="store_true",
+        help="Skip distribution download (extensions only)")
     parser.add_argument(
         "-d", "--dir", default=".h2c",
         help="Install directory (default: .h2c)")
@@ -568,16 +663,18 @@ def main():
     if args.info:
         names = args.extensions
         if not names:
-            yaml_depends, _ = _read_yaml_config()
+            yaml_depends, _, _ = _read_yaml_config()
             names = yaml_depends
         _info(names)
         return
 
     _install(
-        core_version=args.core_version,
+        distribution_version=args.distribution_version,
+        distribution=args.distribution,
         extensions=args.extensions or None,
         install_dir=args.dir,
         no_reinstall=args.no_reinstall,
+        no_distribution=args.no_distribution,
         ignored=set(args.ignore_compatibility_errors) or None,
     )
 

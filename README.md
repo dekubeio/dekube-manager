@@ -6,7 +6,7 @@
 ![stdlib only](https://img.shields.io/badge/dependencies-stdlib%20only-brightgreen)
 ![public domain](https://img.shields.io/badge/license-public%20domain-brightgreen)
 
-Lightweight package manager for [helmfile2compose](https://github.com/helmfile2compose/helmfile2compose). Downloads the core script and CRD operator modules from GitHub releases. Python 3, stdlib only — no dependencies.
+Lightweight package manager for [helmfile2compose](https://github.com/helmfile2compose/helmfile2compose). Downloads a distribution (full or bare engine) and CRD operator modules from GitHub releases. Python 3, stdlib only — no dependencies.
 
 ## Usage
 
@@ -14,17 +14,23 @@ Lightweight package manager for [helmfile2compose](https://github.com/helmfile2c
 # Download from main (rolling release)
 curl -fsSL https://raw.githubusercontent.com/helmfile2compose/h2c-manager/main/h2c-manager.py -o h2c-manager.py
 
-# Core only
+# Distribution only (default: helmfile2compose)
 python3 h2c-manager.py
 
-# Core + operators (from CLI)
+# Distribution + operators (from CLI)
 python3 h2c-manager.py keycloak cert-manager trust-manager servicemonitor
 
-# Core + operators (from helmfile2compose.yaml depends list)
+# Distribution + operators (from helmfile2compose.yaml depends list)
 python3 h2c-manager.py
 
 # Pin versions
-python3 h2c-manager.py --core-version v2.1.0 keycloak==0.2.0
+python3 h2c-manager.py --distribution-version v2.1.0 keycloak==0.2.0
+
+# Use the bare engine instead of the full distribution
+python3 h2c-manager.py --distribution core
+
+# Extensions only (no distribution)
+python3 h2c-manager.py --no-distribution keycloak
 
 # Custom install directory
 python3 h2c-manager.py -d ./tools keycloak
@@ -52,10 +58,11 @@ Defaults: `--helmfile-dir .`, `--extensions-dir .h2c/extensions` (if it exists),
 
 ## Declarative dependencies
 
-If `helmfile2compose.yaml` exists, h2c-manager reads `core_version` and `depends` from it:
+If `helmfile2compose.yaml` exists, h2c-manager reads `distribution`, `distribution_version` and `depends` from it:
 
 ```yaml
-core_version: v2.1.0
+distribution: helmfile2compose   # optional (default: helmfile2compose)
+distribution_version: v2.1.0     # optional (latest if omitted)
 depends:
   - keycloak
   - cert-manager==0.1.0
@@ -64,21 +71,47 @@ depends:
 
 ```bash
 python3 h2c-manager.py
-# Core version from helmfile2compose.yaml: v2.1.0
+# Distribution version from helmfile2compose.yaml: v2.1.0
 # Reading extensions from helmfile2compose.yaml: keycloak, cert-manager==0.1.0, trust-manager
 ```
 
-CLI flags (`--core-version`, explicit extension args) override the yaml.
+CLI flags (`--distribution-version`, `--distribution`, explicit extension args) override the yaml.
+
+Backwards compatibility: `core_version` in yaml is read as a fallback for `distribution_version`.
 
 ## Output
 
 ```
 .h2c/
-├── helmfile2compose.py
+├── helmfile2compose.py          # or h2c.py if distribution: core
 └── extensions/
     ├── keycloak.py
-    ├── cert_manager.py        # auto-resolved as dep of trust-manager
+    ├── cert_manager.py          # auto-resolved as dep of trust-manager
     └── servicemonitor.py
+```
+
+## Distributions
+
+`distributions.json` maps distribution names to GitHub repos. Two distributions are available:
+
+| Name | Script | Description |
+|------|--------|-------------|
+| `helmfile2compose` | `helmfile2compose.py` | Full distribution — core + built-in extensions |
+| `core` | `h2c.py` | Bare engine — no built-in converters |
+
+### Schema
+
+```json
+{
+  "schema_version": 1,
+  "distributions": {
+    "<name>": {
+      "repo": "<org>/<repo>",
+      "file": "<filename>.py",
+      "description": "human-readable description"
+    }
+  }
+}
 ```
 
 ## Extension registry

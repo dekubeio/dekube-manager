@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "distributions": {
+    "core": {
+      "repo": "helmfile2compose/h2c-core",
+      "file": "h2c.py",
+      "description": "Bare engine — no built-in converters"
+    },
+    "helmfile2compose": {
+      "repo": "helmfile2compose/helmfile2compose",
+      "file": "helmfile2compose.py",
+      "description": "Full distribution — core + built-in extensions"
+    }
+  }
+}
