@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """h2c-manager — lightweight package manager for helmfile2compose.
 
-Downloads h2c-core (helmfile2compose.py) and optional extensions
+Downloads helmfile2compose.py and optional extensions
 from GitHub, resolving versions and dependencies automatically.
 
 Usage:
@@ -33,7 +33,7 @@ import sys
 import urllib.error
 import urllib.request
 
-CORE_REPO = "helmfile2compose/h2c-core"
+CORE_REPO = "helmfile2compose/helmfile2compose"
 CORE_FILE = "helmfile2compose.py"
 REGISTRY_URL = (
     "https://raw.githubusercontent.com/"

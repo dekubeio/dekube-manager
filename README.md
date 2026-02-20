@@ -6,7 +6,7 @@
 ![stdlib only](https://img.shields.io/badge/dependencies-stdlib%20only-brightgreen)
 ![public domain](https://img.shields.io/badge/license-public%20domain-brightgreen)
 
-Lightweight package manager for [helmfile2compose](https://github.com/helmfile2compose/h2c-core). Downloads the core script and CRD operator modules from GitHub releases. Python 3, stdlib only — no dependencies.
+Lightweight package manager for [helmfile2compose](https://github.com/helmfile2compose/helmfile2compose). Downloads the core script and CRD operator modules from GitHub releases. Python 3, stdlib only — no dependencies.
 
 ## Usage
 
