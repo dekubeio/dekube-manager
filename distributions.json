@@ -10,6 +10,11 @@
       "repo": "helmfile2compose/helmfile2compose",
       "file": "helmfile2compose.py",
       "description": "Full distribution — core + built-in extensions"
+    },
+    "kubernetes2simple": {
+      "repo": "helmfile2compose/kubernetes2simple",
+      "file": "kubernetes2simple.py",
+      "description": "Turnkey distribution — helmfile2compose + all official extensions"
     }
   }
 }
