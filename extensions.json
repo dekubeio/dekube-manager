@@ -19,15 +19,15 @@
       "file": "pvc_indexer.py",
       "depends": []
     },
-    "simple-service-indexer": {
-      "repo": "helmfile2compose/h2c-indexer-simple-service",
+    "service-indexer": {
+      "repo": "helmfile2compose/h2c-indexer-service",
       "description": "Service indexer (built-in)",
       "file": "service_indexer.py",
       "depends": []
     },
     "workload": {
-      "repo": "helmfile2compose/h2c-converter-workload",
-      "description": "Workload converter — Deployment, StatefulSet, DaemonSet, Job (built-in)",
+      "repo": "helmfile2compose/h2c-provider-simple-workload",
+      "description": "Simple workload provider — Deployment, StatefulSet, DaemonSet, Job (built-in)",
       "file": "workloads.py",
       "depends": []
     },
