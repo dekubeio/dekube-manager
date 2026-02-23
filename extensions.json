@@ -1,6 +1,48 @@
 {
   "schema_version": 1,
   "extensions": {
+    "configmap-indexer": {
+      "repo": "helmfile2compose/h2c-indexer-configmap",
+      "description": "ConfigMap indexer (built-in)",
+      "file": "configmap_indexer.py",
+      "depends": []
+    },
+    "secret-indexer": {
+      "repo": "helmfile2compose/h2c-indexer-secret",
+      "description": "Secret indexer (built-in)",
+      "file": "secret_indexer.py",
+      "depends": []
+    },
+    "pvc-indexer": {
+      "repo": "helmfile2compose/h2c-indexer-pvc",
+      "description": "PVC indexer (built-in)",
+      "file": "pvc_indexer.py",
+      "depends": []
+    },
+    "simple-service-indexer": {
+      "repo": "helmfile2compose/h2c-indexer-simple-service",
+      "description": "Service indexer (built-in)",
+      "file": "service_indexer.py",
+      "depends": []
+    },
+    "workload": {
+      "repo": "helmfile2compose/h2c-converter-workload",
+      "description": "Workload converter — Deployment, StatefulSet, DaemonSet, Job (built-in)",
+      "file": "workloads.py",
+      "depends": []
+    },
+    "haproxy": {
+      "repo": "helmfile2compose/h2c-rewriter-haproxy",
+      "description": "HAProxy ingress rewriter (built-in)",
+      "file": "haproxy.py",
+      "depends": []
+    },
+    "caddy": {
+      "repo": "helmfile2compose/h2c-provider-caddy",
+      "description": "Caddy reverse proxy provider (built-in)",
+      "file": "caddy.py",
+      "depends": []
+    },
     "keycloak": {
       "repo": "helmfile2compose/h2c-provider-keycloak",
       "description": "Keycloak and KeycloakRealmImport CRDs",
