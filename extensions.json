@@ -97,6 +97,12 @@
       "description": "Fix bind mount permissions for non-root containers (built-in)",
       "file": "fix_permissions.py",
       "depends": []
+    },
+    "fake-apiserver": {
+      "repo": "baptisterajaut/h2c-api",
+      "description": "Inject fake Kubernetes API server into compose stack",
+      "file": "inject.py",
+      "depends": []
     }
   }
 }
