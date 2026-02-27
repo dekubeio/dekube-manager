@@ -2,104 +2,104 @@
   "schema_version": 1,
   "extensions": {
     "configmap-indexer": {
-      "repo": "helmfile2compose/h2c-indexer-configmap",
+      "repo": "dekubeio/dekube-indexer-configmap",
       "description": "ConfigMap indexer (built-in)",
       "file": "configmap_indexer.py",
       "depends": []
     },
     "secret-indexer": {
-      "repo": "helmfile2compose/h2c-indexer-secret",
+      "repo": "dekubeio/dekube-indexer-secret",
       "description": "Secret indexer (built-in)",
       "file": "secret_indexer.py",
       "depends": []
     },
     "pvc-indexer": {
-      "repo": "helmfile2compose/h2c-indexer-pvc",
+      "repo": "dekubeio/dekube-indexer-pvc",
       "description": "PVC indexer (built-in)",
       "file": "pvc_indexer.py",
       "depends": []
     },
     "service-indexer": {
-      "repo": "helmfile2compose/h2c-indexer-service",
+      "repo": "dekubeio/dekube-indexer-service",
       "description": "Service indexer (built-in)",
       "file": "service_indexer.py",
       "depends": []
     },
     "workload": {
-      "repo": "helmfile2compose/h2c-provider-simple-workload",
+      "repo": "dekubeio/dekube-provider-simple-workload",
       "description": "Simple workload provider — Deployment, StatefulSet, DaemonSet, Job (built-in)",
       "file": "workloads.py",
       "depends": []
     },
     "haproxy": {
-      "repo": "helmfile2compose/h2c-rewriter-haproxy",
+      "repo": "dekubeio/dekube-rewriter-haproxy",
       "description": "HAProxy ingress rewriter (built-in)",
       "file": "haproxy.py",
       "depends": []
     },
     "caddy": {
-      "repo": "helmfile2compose/h2c-provider-caddy",
+      "repo": "dekubeio/dekube-provider-caddy",
       "description": "Caddy reverse proxy provider (built-in)",
       "file": "caddy.py",
       "depends": []
     },
     "keycloak": {
-      "repo": "helmfile2compose/h2c-provider-keycloak",
+      "repo": "dekubeio/dekube-provider-keycloak",
       "description": "Keycloak and KeycloakRealmImport CRDs",
       "file": "keycloak.py",
       "depends": []
     },
     "cert-manager": {
-      "repo": "helmfile2compose/h2c-converter-cert-manager",
+      "repo": "dekubeio/dekube-converter-cert-manager",
       "description": "Certificate, ClusterIssuer, Issuer CRDs",
       "file": "cert_manager.py",
       "depends": [],
       "incompatible": ["flatten-internal-urls"]
     },
     "trust-manager": {
-      "repo": "helmfile2compose/h2c-converter-trust-manager",
+      "repo": "dekubeio/dekube-converter-trust-manager",
       "description": "Bundle CRD (trust-manager)",
       "file": "trust_manager.py",
       "depends": ["cert-manager"]
     },
     "servicemonitor": {
-      "repo": "helmfile2compose/h2c-provider-servicemonitor",
+      "repo": "dekubeio/dekube-provider-servicemonitor",
       "description": "Prometheus and ServiceMonitor CRDs (kube-prometheus-stack)",
       "file": "servicemonitor.py",
       "depends": []
     },
     "flatten-internal-urls": {
-      "repo": "helmfile2compose/h2c-transform-flatten-internal-urls",
+      "repo": "dekubeio/dekube-transform-flatten-internal-urls",
       "description": "Rewrite K8s FQDNs to short Docker names, strip network aliases",
       "file": "flatten_internal_urls.py",
       "depends": []
     },
     "nginx": {
-      "repo": "helmfile2compose/h2c-rewriter-nginx",
+      "repo": "dekubeio/dekube-rewriter-nginx",
       "description": "Nginx ingress annotation rewriter",
       "file": "nginx_rewriter.py",
       "depends": []
     },
     "traefik": {
-      "repo": "helmfile2compose/h2c-rewriter-traefik",
+      "repo": "dekubeio/dekube-rewriter-traefik",
       "description": "Traefik ingress annotation rewriter (POC)",
       "file": "traefik_rewriter.py",
       "depends": []
     },
     "bitnami": {
-      "repo": "helmfile2compose/h2c-transform-bitnami",
+      "repo": "dekubeio/dekube-transform-bitnami",
       "description": "Bitnami Redis, PostgreSQL, Keycloak workarounds",
       "file": "bitnami.py",
       "depends": []
     },
     "fix-permissions": {
-      "repo": "helmfile2compose/h2c-transform-fix-permissions",
+      "repo": "dekubeio/dekube-transform-fix-permissions",
       "description": "Fix bind mount permissions for non-root containers (built-in)",
       "file": "fix_permissions.py",
       "depends": []
     },
     "fake-apiserver": {
-      "repo": "baptisterajaut/h2c-api",
+      "repo": "baptisterajaut/dekube-fakeapi",
       "description": "Inject fake Kubernetes API server into compose stack",
       "file": "inject.py",
       "depends": []
