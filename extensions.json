@@ -98,6 +98,12 @@
       "file": "fix_permissions.py",
       "depends": []
     },
+    "nginx-provider": {
+      "repo": "dekubeio/dekube-provider-nginx",
+      "description": "Nginx reverse proxy provider (alternative to Caddy)",
+      "file": "nginx_provider.py",
+      "depends": []
+    },
     "fake-apiserver": {
       "repo": "baptisterajaut/dekube-fakeapi",
       "description": "Inject fake Kubernetes API server into compose stack",
