@@ -53,20 +53,20 @@
     <div class="terminal-body">
       <div class="terminal-panel active" data-panel="run">
         <span class="comment"># download, resolve, convert — one shot</span>
-        <div class="line"><span class="prompt">$ </span><span class="cmd">curl -fsSL manager.dekube.io/get -o dekube-manager.py</span></div>
+        <div class="line"><span class="prompt">$ </span><span class="cmd">curl -fsSL manager.dekube.io/get | bash</span></div>
         <div class="line"><span class="prompt">$ </span><span class="cmd">python dekube-manager.py run -e local</span></div>
         <div class="line"><span class="prompt">$ </span><span class="cmd">docker compose up -d</span></div>
       </div>
       <div class="terminal-panel" data-panel="install">
         <span class="comment"># install distribution + extensions</span>
-        <div class="line"><span class="prompt">$ </span><span class="cmd">curl -fsSL manager.dekube.io/get -o dekube-manager.py</span></div>
+        <div class="line"><span class="prompt">$ </span><span class="cmd">curl -fsSL manager.dekube.io/get | bash</span></div>
         <div class="line"><span class="prompt">$ </span><span class="cmd">python dekube-manager.py</span></div>
         <div class="line"><span class="prompt">$ </span><span class="cmd">python dekube-manager.py keycloak</span></div>
         <div class="line"><span class="prompt">$ </span><span class="cmd">python dekube-manager.py keycloak==0.1.0</span></div>
       </div>
       <div class="terminal-panel" data-panel="info">
         <span class="comment"># inspect available extensions</span>
-        <div class="line"><span class="prompt">$ </span><span class="cmd">curl -fsSL manager.dekube.io/get -o dekube-manager.py</span></div>
+        <div class="line"><span class="prompt">$ </span><span class="cmd">curl -fsSL manager.dekube.io/get | bash</span></div>
         <div class="line"><span class="prompt">$ </span><span class="cmd">python dekube-manager.py --info</span></div>
         <div class="line"><span class="prompt">$ </span><span class="cmd">python dekube-manager.py --info nginx traefik</span></div>
       </div>
