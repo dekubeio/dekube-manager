@@ -214,12 +214,24 @@ def _normalize_tag(version):
 
 
 def _resolve_dependencies(requested, registry):
-    """Expand one-level depends for each requested extension. Preserves order.
+    """Recursively expand depends for each requested extension. Preserves order.
 
     Returns a list of (name, pinned_version_or_none, is_dependency) tuples.
     """
     seen = set()
     result = []
+
+    def _add_deps(name):
+        entry = registry.get(name)
+        if entry is None:
+            print(f"Error: extension depends on '{name}', "
+                  f"which is not in the registry", file=sys.stderr)
+            sys.exit(1)
+        for dep in entry.get("depends", []):
+            if dep not in seen:
+                seen.add(dep)
+                _add_deps(dep)
+                result.append((dep, None, True))
 
     for name, pinned in requested:
         entry = registry.get(name)
@@ -228,15 +240,8 @@ def _resolve_dependencies(requested, registry):
             print(f"  Available: {', '.join(sorted(registry))}", file=sys.stderr)
             sys.exit(1)
 
-        # Add dependencies first (unpinned — latest)
-        for dep in entry.get("depends", []):
-            if dep not in seen:
-                seen.add(dep)
-                if dep not in registry:
-                    print(f"Error: extension '{name}' depends on '{dep}', "
-                          f"which is not in the registry", file=sys.stderr)
-                    sys.exit(1)
-                result.append((dep, None, True))
+        # Add dependencies first (unpinned — latest), recursively
+        _add_deps(name)
 
         # Add the extension itself
         if name not in seen:
@@ -352,6 +357,7 @@ def _install_distribution(install_dir, dist_name, dist_version,
     distributions = _fetch_distributions()
     repo, filename = _resolve_distribution(dist_name, distributions)
 
+    filename = os.path.basename(filename)  # sanitize: prevent path traversal
     dist_path = os.path.join(install_dir, filename)
     if no_reinstall and os.path.isfile(dist_path):
         print(f"Cached {dist_path}")
